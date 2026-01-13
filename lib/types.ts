@@ -170,3 +170,35 @@ export interface EmitenInfoResponse {
   };
   message: string;
 }
+
+// KeyStats types
+export interface KeyStatsItem {
+  id: string;
+  name: string;
+  value: string;
+}
+
+export interface KeyStatsCategory {
+  keystats_name: string;
+  fin_name_results: {
+    fitem: KeyStatsItem;
+    hidden_graph_ico: boolean;
+    is_new_update: boolean;
+  }[];
+}
+
+export interface KeyStatsResponse {
+  data: {
+    closure_fin_items_results: KeyStatsCategory[];
+  };
+  message: string;
+}
+
+// Processed KeyStats data for UI
+export interface KeyStatsData {
+  currentValuation: KeyStatsItem[];
+  incomeStatement: KeyStatsItem[];
+  balanceSheet: KeyStatsItem[];
+  profitability: KeyStatsItem[];
+  growth: KeyStatsItem[];
+}

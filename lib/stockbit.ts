@@ -1,4 +1,4 @@
-import type { MarketDetectorResponse, OrderbookResponse, BrokerData, WatchlistResponse, BrokerSummaryData, EmitenInfoResponse } from './types';
+import type { MarketDetectorResponse, OrderbookResponse, BrokerData, WatchlistResponse, BrokerSummaryData, EmitenInfoResponse, KeyStatsResponse, KeyStatsData, KeyStatsItem } from './types';
 import { getSessionValue } from './supabase';
 
 const STOCKBIT_BASE_URL = 'https://exodus.stockbit.com';
@@ -298,3 +298,44 @@ export function getBrokerSummary(marketDetectorData: MarketDetectorResponse): Br
     topSellers: brokerSummary?.brokers_sell?.slice(0, 4) || [],
   };
 }
+
+/**
+ * Parse KeyStats API response into structured data
+ */
+function parseKeyStatsResponse(json: KeyStatsResponse): KeyStatsData {
+  const categories = json.data?.closure_fin_items_results || [];
+  
+  const findCategory = (name: string): KeyStatsItem[] => {
+    const category = categories.find(c => c.keystats_name === name);
+    if (!category) return [];
+    return category.fin_name_results.map(r => r.fitem);
+  };
+
+  return {
+    currentValuation: findCategory('Current Valuation'),
+    incomeStatement: findCategory('Income Statement'),
+    balanceSheet: findCategory('Balance Sheet'),
+    profitability: findCategory('Profitability'),
+    growth: findCategory('Growth'),
+  };
+}
+
+/**
+ * Fetch KeyStats data for a stock
+ */
+export async function fetchKeyStats(emiten: string): Promise<KeyStatsData> {
+  const url = `${STOCKBIT_BASE_URL}/keystats/ratio/v1/${emiten}?year_limit=10`;
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: await getHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`KeyStats API error: ${response.status} ${response.statusText}`);
+  }
+
+  const json: KeyStatsResponse = await response.json();
+  return parseKeyStatsResponse(json);
+}
+

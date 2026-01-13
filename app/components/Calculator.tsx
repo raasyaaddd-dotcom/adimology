@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import InputForm from './InputForm';
 import CompactResultCard from './CompactResultCard';
 import BrokerSummaryCard from './BrokerSummaryCard';
+import KeyStatsCard from './KeyStatsCard';
 import html2canvas from 'html2canvas';
-import type { StockInput, StockAnalysisResult } from '@/lib/types';
+import type { StockInput, StockAnalysisResult, KeyStatsData } from '@/lib/types';
 import { getDefaultDate } from '@/lib/utils';
 
 interface CalculatorProps {
@@ -59,6 +60,7 @@ export default function Calculator({ selectedStock }: CalculatorProps) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copiedImage, setCopiedImage] = useState(false);
+  const [keyStats, setKeyStats] = useState<KeyStatsData | null>(null);
 
   // Date state lifted from InputForm
   const [fromDate, setFromDate] = useState(getDefaultDate());
@@ -100,6 +102,17 @@ export default function Calculator({ selectedStock }: CalculatorProps) {
       }
 
       setResult(json.data);
+      
+      // Fetch KeyStats after getting result
+      try {
+        const keyStatsRes = await fetch(`/api/keystats?emiten=${data.emiten}`);
+        const keyStatsJson = await keyStatsRes.json();
+        if (keyStatsJson.success) {
+          setKeyStats(keyStatsJson.data);
+        }
+      } catch (keyStatsErr) {
+        console.error('Failed to fetch key stats:', keyStatsErr);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -304,6 +317,14 @@ export default function Calculator({ selectedStock }: CalculatorProps) {
                 dateRange={`${result.input.fromDate} — ${result.input.toDate}`}
                 brokerSummary={result.brokerSummary}
                 sector={result.sector}
+              />
+            )}
+
+            {/* KeyStats Card */}
+            {keyStats && (
+              <KeyStatsCard
+                emiten={result.input.emiten}
+                keyStats={keyStats}
               />
             )}
           </div>
